@@ -1,0 +1,1365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0F1117">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="StudyForge">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="description" content="Smart formula study app with adaptive quiz, flashcards, problem generator, and handwriting input.">
+<title>StudyForge</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/icons/icon-192.png">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════
+   RESET & ROOT
+═══════════════════════════════════════ */
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#0F1117;--bg2:#171B26;--bg3:#1E2330;--bg4:#252A3A;
+  --txt:#F0F2F8;--txt2:#8B92A8;--txt3:#5C6278;--brd:#2A2F42;
+  --acc:#6C63FF;--grn:#95E06C;--red:#FF6B6B;--ylw:#FFD93D;--teal:#4ECDC4;--org:#FF9F43;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bot: env(safe-area-inset-bottom, 0px);
+}
+html,body{
+  height:100%;width:100%;overflow:hidden;
+  background:var(--bg);color:var(--txt);
+  font-family:'DM Sans',sans-serif;font-size:14px;
+  -webkit-font-smoothing:antialiased;
+}
+/* ═══════════════════════════════════════
+   APP SHELL
+═══════════════════════════════════════ */
+#app{
+  position:fixed;inset:0;
+  padding-top:var(--safe-top);
+  display:flex;flex-direction:column;
+  background:var(--bg);
+  max-width:480px;margin:0 auto;
+}
+/* on desktop show a subtle border */
+@media(min-width:520px){
+  #app{border-left:1px solid var(--brd);border-right:1px solid var(--brd)}
+}
+/* ═══════════════════════════════════════
+   SCREENS
+═══════════════════════════════════════ */
+.screen{display:none;flex-direction:column;height:100%;overflow:hidden}
+.screen.active{display:flex}
+/* ═══════════════════════════════════════
+   COMPONENTS
+═══════════════════════════════════════ */
+.topbar{
+  background:var(--bg2);
+  padding:13px 16px 11px;
+  border-bottom:1px solid var(--brd);
+  display:flex;align-items:center;gap:10px;
+  flex-shrink:0;
+}
+.topbar h2{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600;color:var(--txt);flex:1}
+.ibtn{
+  width:34px;height:34px;border-radius:9px;
+  background:var(--bg3);border:1px solid var(--brd);
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  color:var(--txt2);font-size:15px;flex-shrink:0;
+  transition:background .15s;user-select:none;
+}
+.ibtn:active{background:var(--bg4)}
+.bnav{
+  background:var(--bg2);border-top:1px solid var(--brd);
+  padding:6px 0;
+  padding-bottom:calc(6px + var(--safe-bot));
+  display:flex;justify-content:space-around;flex-shrink:0;
+}
+.ni{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:4px 8px;min-width:54px;user-select:none}
+.ni .nic{width:34px;height:34px;border-radius:10px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:16px}
+.ni .nil{font-size:9px;color:var(--txt3);font-weight:500}
+.ni.active .nic{background:var(--acc)}
+.ni.active .nil{color:var(--acc)}
+.sa{overflow-y:auto;flex:1;-webkit-overflow-scrolling:touch}
+.sa::-webkit-scrollbar{width:2px}
+.sa::-webkit-scrollbar-thumb{background:var(--brd);border-radius:2px}
+.stitle{
+  font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:600;
+  color:var(--txt3);padding:14px 16px 8px;text-transform:uppercase;letter-spacing:.8px;
+}
+.card{
+  background:var(--bg3);border:1px solid var(--brd);border-radius:14px;
+  padding:13px 15px;margin:0 16px 10px;cursor:pointer;transition:background .15s;
+}
+.card:active{background:var(--bg4)}
+.btn{
+  border-radius:12px;padding:13px;font-size:13px;font-weight:600;
+  cursor:pointer;font-family:'DM Sans',sans-serif;
+  border:none;transition:opacity .15s;width:100%;
+}
+.btn:active{opacity:.8}
+.btn-a{background:var(--acc);color:#fff}
+.btn-s{background:var(--bg3);border:1.5px solid var(--brd);color:var(--txt2)}
+.btn-r{background:#FF6B6B11;border:1.5px solid #FF6B6B55;color:var(--red)}
+.inp{
+  width:100%;background:var(--bg3);border:1.5px solid var(--brd);
+  border-radius:10px;padding:11px 13px;color:var(--txt);
+  font-size:14px;font-family:'DM Sans',sans-serif;outline:none;
+}
+.inp:focus{border-color:var(--acc)}
+.sel{
+  width:100%;background:var(--bg3);border:1.5px solid var(--brd);
+  border-radius:10px;padding:11px 13px;color:var(--txt);
+  font-size:13px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;
+}
+.lbl{font-size:11px;color:var(--txt2);margin-bottom:5px;font-weight:500}
+.ig{margin-bottom:13px}
+.tag{display:inline-block;font-size:10px;padding:3px 8px;border-radius:6px;font-weight:600}
+.prog{height:6px;background:var(--bg4);border-radius:3px;overflow:hidden}
+.pf{height:100%;border-radius:3px;transition:width .5s ease}
+.symb{
+  background:var(--bg3);border:1px solid var(--brd);
+  border-radius:7px;padding:6px 9px;color:var(--txt);font-size:13px;cursor:pointer;
+}
+.symb:active{background:var(--bg4)}
+/* Modal */
+.mwrap{
+  position:absolute;inset:0;background:#00000099;
+  z-index:50;display:flex;align-items:flex-end;
+}
+.modal{
+  background:var(--bg2);border-radius:22px 22px 0 0;
+  padding:18px 16px calc(18px + var(--safe-bot));
+  width:100%;border-top:1px solid var(--brd);
+  max-height:88vh;overflow-y:auto;
+}
+.modal h3{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:600;color:var(--txt);margin-bottom:14px}
+.chip{
+  background:var(--bg3);border:1px solid var(--brd);border-radius:20px;
+  padding:6px 13px;font-size:11px;color:var(--txt2);cursor:pointer;font-weight:500;white-space:nowrap;
+}
+.chip.on{background:#6C63FF22;border-color:var(--acc);color:var(--acc)}
+/* Quiz options */
+.opt{
+  background:var(--bg3);border:1.5px solid var(--brd);border-radius:12px;
+  padding:13px 14px;margin-bottom:9px;cursor:pointer;
+  display:flex;align-items:center;gap:10px;font-size:13px;color:var(--txt);
+  transition:border-color .15s,background .15s;
+}
+.opt:active:not(.locked){border-color:#6C63FF88;background:var(--bg4)}
+.opt.correct{background:#95E06C11;border-color:var(--grn)}
+.opt.wrong{background:#FF6B6B11;border-color:var(--red)}
+.om{
+  width:28px;height:28px;border-radius:8px;background:var(--bg4);
+  border:1px solid var(--brd);display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;flex-shrink:0;font-family:'Space Grotesk',sans-serif;
+}
+.opt.correct .om{background:#95E06C22;border-color:var(--grn);color:var(--grn)}
+.opt.wrong .om{background:#FF6B6B22;border-color:var(--red);color:var(--red)}
+.fb{padding:12px 14px;border-radius:10px;font-size:12px;margin:8px 0;line-height:1.5}
+.fb.ok{background:#95E06C11;border:1px solid #95E06C33;color:var(--grn)}
+.fb.bad{background:#FF6B6B11;border:1px solid #FF6B6B33;color:#FF8888}
+/* FAB */
+.fab{
+  position:absolute;bottom:calc(72px + var(--safe-bot));right:16px;
+  width:52px;height:52px;border-radius:16px;background:var(--acc);
+  border:none;color:#fff;font-size:24px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;z-index:10;
+  box-shadow:0 4px 20px #6C63FF44;transition:transform .15s;
+}
+.fab:active{transform:scale(.94)}
+/* Stat box */
+.sbox{
+  flex:1;background:var(--bg3);border:1px solid var(--brd);
+  border-radius:10px;padding:10px;text-align:center;
+}
+.sbox .sv{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700}
+.sbox .sl{font-size:10px;color:var(--txt3);margin-top:3px}
+/* Canvas */
+#hw-canvas{
+  background:#111624;border-radius:12px;
+  cursor:crosshair;touch-action:none;
+  display:block;width:100%;
+}
+/* Exam header */
+.exam-top{background:#1A0808;border-bottom:1px solid #3A1515}
+/* Divider */
+.divider{height:1px;background:var(--brd);margin:10px 0}
+/* Input search bar */
+.search-bar{
+  margin:10px 16px 0;width:calc(100% - 32px);
+  background:var(--bg3);border:1.5px solid var(--brd);
+  border-radius:10px;padding:10px 13px;color:var(--txt);
+  font-size:13px;font-family:'DM Sans',sans-serif;outline:none;
+}
+.search-bar:focus{border-color:var(--acc)}
+/* Toast */
+#toast{
+  position:fixed;bottom:calc(80px + var(--safe-bot));left:50%;
+  transform:translateX(-50%) translateY(20px);
+  background:#252A3A;border:1px solid var(--brd);border-radius:10px;
+  padding:10px 18px;font-size:12px;color:var(--txt);
+  opacity:0;transition:opacity .3s,transform .3s;pointer-events:none;
+  z-index:100;white-space:nowrap;
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+/* Lesson chips scroller */
+.chips-scroll{
+  display:flex;gap:8px;padding:10px 16px 8px;
+  overflow-x:auto;flex-shrink:0;border-bottom:1px solid var(--brd);
+}
+.chips-scroll::-webkit-scrollbar{display:none}
+</style>
+</head>
+<body>
+
+<div id="app">
+
+<!-- ══════════════════════════════════
+     HOME
+══════════════════════════════════ -->
+<div class="screen active" id="S_home">
+  <div style="background:var(--bg2);padding:16px 16px 14px;border-bottom:1px solid var(--brd);flex-shrink:0">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div>
+        <div style="font-size:12px;color:var(--txt2);margin-bottom:3px" id="lbl-greeting">Good morning, Student 👋</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-size:21px;font-weight:700" id="lbl-ready">Ready to study?</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <div class="ibtn" onclick="openModal('M_lang')" id="lang-flag" style="font-size:11px;font-weight:700;color:var(--ylw)">EN</div>
+        <div class="ibtn" onclick="goTo('S_settings','n4')">⚙</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+      <div class="sbox"><div class="sv" style="color:var(--ylw)" id="h-streak">7</div><div class="sl" id="lbl-streak">Day streak</div></div>
+      <div class="sbox"><div class="sv" style="color:var(--grn)" id="h-acc">—</div><div class="sl" id="lbl-accuracy">Accuracy</div></div>
+      <div class="sbox"><div class="sv" style="color:var(--teal)" id="h-formulas">0</div><div class="sl" id="lbl-formulas">Formulas</div></div>
+    </div>
+  </div>
+  <div class="sa">
+    <div class="stitle" id="lbl-subjects">Subjects</div>
+    <div style="padding:0 16px 4px" id="home-grid"></div>
+    <div class="stitle" id="lbl-quick">Quick Actions</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px 16px">
+      <div class="card" style="margin:0;text-align:center;padding:15px 10px" onclick="startAdaptiveQuiz()">
+        <div style="font-size:24px;margin-bottom:7px">🧠</div>
+        <div style="font-size:13px;font-weight:600" id="lbl-smart">Smart Quiz</div>
+        <div style="font-size:10px;color:var(--txt2);margin-top:3px" id="lbl-adaptive">Adaptive · AI-powered</div>
+      </div>
+      <div class="card" style="margin:0;text-align:center;padding:15px 10px" onclick="startExam()">
+        <div style="font-size:24px;margin-bottom:7px">📋</div>
+        <div style="font-size:13px;font-weight:600" id="lbl-exam">Exam Mode</div>
+        <div style="font-size:10px;color:var(--txt2);margin-top:3px" id="lbl-exam-sub">Timed · No hints</div>
+      </div>
+      <div class="card" style="margin:0;text-align:center;padding:15px 10px" onclick="goTo('S_probgen','n2')">
+        <div style="font-size:24px;margin-bottom:7px">⚡</div>
+        <div style="font-size:13px;font-weight:600" id="lbl-probgen">Problem Gen</div>
+        <div style="font-size:10px;color:var(--txt2);margin-top:3px" id="lbl-probgen-sub">Apply formulas</div>
+      </div>
+      <div class="card" style="margin:0;text-align:center;padding:15px 10px" onclick="goTo('S_hw','n2')">
+        <div style="font-size:24px;margin-bottom:7px">✍</div>
+        <div style="font-size:13px;font-weight:600" id="lbl-hw">Handwriting</div>
+        <div style="font-size:10px;color:var(--txt2);margin-top:3px" id="lbl-hw-sub">Draw formulas</div>
+      </div>
+    </div>
+    <div class="stitle" id="lbl-weak">Weak Areas</div>
+    <div id="home-weak" style="padding:0 16px 100px"></div>
+  </div>
+  <div class="bnav">
+    <div class="ni active" id="n0" onclick="goTo('S_home','n0')"><div class="nic">🏠</div><div class="nil" id="lbl-n-home">Home</div></div>
+    <div class="ni" id="n1" onclick="goTo('S_subjects','n1')"><div class="nic">📚</div><div class="nil" id="lbl-n-subj">Subjects</div></div>
+    <div class="ni" id="n2" onclick="startAdaptiveQuiz()"><div class="nic">🧠</div><div class="nil" id="lbl-n-quiz">Quiz</div></div>
+    <div class="ni" id="n3" onclick="goTo('S_progress','n3')"><div class="nic">📊</div><div class="nil" id="lbl-n-prog">Progress</div></div>
+    <div class="ni" id="n4" onclick="goTo('S_settings','n4')"><div class="nic">⚙</div><div class="nil" id="lbl-n-set">Settings</div></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     SUBJECTS LIST
+══════════════════════════════════ -->
+<div class="screen" id="S_subjects">
+  <div class="topbar">
+    <div class="ibtn" onclick="goTo('S_home','n0')">‹</div>
+    <h2 id="lbl-all-subj">All Subjects</h2>
+    <div class="ibtn" onclick="openAddSubject()" style="color:var(--grn);font-size:20px;font-weight:300">+</div>
+  </div>
+  <div class="sa" style="padding:12px 16px 20px" id="subjects-list"></div>
+</div>
+
+<!-- ══════════════════════════════════
+     SUBJECT DETAIL
+══════════════════════════════════ -->
+<div class="screen" id="S_subj">
+  <div class="topbar">
+    <div class="ibtn" onclick="goTo('S_subjects','n1')">‹</div>
+    <h2 id="sd-name">Subject</h2>
+    <div class="ibtn" onclick="toggleSDSearch()" style="font-size:13px">🔍</div>
+    <div class="ibtn" onclick="openManageLessons()" style="color:var(--teal);font-size:13px">📁</div>
+    <div class="ibtn" onclick="startAdaptiveQuiz()" style="color:var(--acc);font-size:13px">🧠</div>
+  </div>
+  <input class="search-bar" id="sd-search" placeholder="Search formulas..." style="display:none" oninput="renderFormulaList()">
+  <div style="display:flex;gap:8px;padding:10px 16px;border-bottom:1px solid var(--brd);flex-shrink:0">
+    <div class="sbox"><div class="sv" id="sd-cnt">0</div><div class="sl" id="lbl-sd-f">Formulas</div></div>
+    <div class="sbox"><div class="sv" style="color:var(--grn)" id="sd-mastered">0</div><div class="sl" id="lbl-sd-m">Mastered</div></div>
+    <div class="sbox"><div class="sv" style="color:var(--teal)" id="sd-acc">0%</div><div class="sl" id="lbl-sd-a">Accuracy</div></div>
+  </div>
+  <div style="display:flex;gap:8px;padding:10px 16px;border-bottom:1px solid var(--brd);flex-shrink:0">
+    <button class="btn btn-a" style="flex:1;padding:10px;font-size:12px" onclick="startAdaptiveQuiz()">🧠 Quiz</button>
+    <button class="btn btn-s" style="flex:1;padding:10px;font-size:12px" onclick="openFlashcards()">🃏 Flash</button>
+    <button class="btn btn-s" style="flex:1;padding:10px;font-size:12px;border-color:var(--teal);color:var(--teal)" onclick="goTo('S_probgen','n2')">⚡ Practice</button>
+  </div>
+  <div class="chips-scroll" id="lesson-chips"></div>
+  <div class="sa" id="formula-list" style="padding:10px 16px 90px"></div>
+  <button class="fab" onclick="openAddFormula()">+</button>
+</div>
+
+<!-- ══════════════════════════════════
+     ADAPTIVE QUIZ
+══════════════════════════════════ -->
+<div class="screen" id="S_quiz">
+  <div class="topbar">
+    <div class="ibtn" onclick="goTo('S_home','n0')">✕</div>
+    <h2 id="lbl-quiz-title">Smart Quiz</h2>
+    <div style="font-size:10px;padding:3px 9px;background:#6C63FF22;border:1px solid #6C63FF55;border-radius:6px;color:var(--acc)" id="q-mode-label">Adaptive</div>
+  </div>
+  <div style="padding:12px 16px;border-bottom:1px solid var(--brd);flex-shrink:0">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px">
+      <span style="font-size:12px;color:var(--txt2)" id="q-counter">Q 1 / 6</span>
+      <span style="font-size:12px;color:var(--txt2)" id="q-score">Score: 0</span>
+    </div>
+    <div class="prog"><div class="pf" id="q-prog" style="width:16%;background:var(--acc)"></div></div>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:7px">
+      <span style="font-size:11px;color:var(--txt3)">Difficulty:</span>
+      <span style="font-size:12px;letter-spacing:1px" id="q-stars">★★☆☆☆</span>
+      <span id="q-weak-badge" style="margin-left:auto;font-size:10px;padding:2px 7px;border-radius:5px"></span>
+    </div>
+  </div>
+  <div class="sa" id="quiz-body" style="padding:16px"></div>
+</div>
+
+<!-- ══════════════════════════════════
+     EXAM MODE
+══════════════════════════════════ -->
+<div class="screen" id="S_exam">
+  <div class="topbar exam-top">
+    <div class="ibtn" onclick="confirmExitExam()" style="background:#2A1010;border-color:#4A1515;color:var(--red)">✕</div>
+    <h2 style="color:#FF7070" id="lbl-exam-title">Exam Mode</h2>
+    <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:var(--red)" id="exam-clock">15:00</div>
+  </div>
+  <div style="height:4px;background:var(--bg4);flex-shrink:0"><div id="exam-tbar" style="height:100%;background:var(--red);transition:width 1s linear;width:100%"></div></div>
+  <div style="padding:10px 16px;border-bottom:1px solid #2A1010;display:flex;justify-content:space-between;flex-shrink:0">
+    <span style="font-size:12px;color:#AA5555" id="exam-q-ctr">Question 1 / 10</span>
+    <span style="font-size:11px;color:#883333" id="lbl-no-hints">No hints · No answers</span>
+  </div>
+  <div class="sa" id="exam-body" style="padding:16px"></div>
+</div>
+
+<!-- ══════════════════════════════════
+     RESULT
+══════════════════════════════════ -->
+<div class="screen" id="S_result">
+  <div class="topbar"><h2 id="lbl-result">Quiz Complete!</h2></div>
+  <div class="sa" style="padding:20px">
+    <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:20px">
+      <div style="position:relative;width:130px;height:130px;margin-bottom:14px">
+        <canvas id="arc-canvas" width="130" height="130" style="position:absolute;inset:0"></canvas>
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700" id="res-score">0/0</div>
+          <div style="font-size:10px;color:var(--txt2)">score</div>
+        </div>
+      </div>
+      <div style="font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;margin-bottom:6px" id="res-grade">—</div>
+      <div style="font-size:13px;color:var(--txt2);text-align:center" id="res-msg"></div>
+    </div>
+    <div style="background:var(--bg3);border:1px solid var(--brd);border-radius:14px;padding:14px;margin-bottom:14px" id="res-breakdown"></div>
+    <div style="background:var(--bg3);border:1px solid #FFD93D33;border-radius:14px;padding:14px;margin-bottom:20px">
+      <div style="font-size:11px;font-weight:600;color:var(--ylw);margin-bottom:10px" id="lbl-weak-focus">📍 Focus on these weak areas:</div>
+      <div id="res-weak"></div>
+    </div>
+    <button class="btn btn-a" style="margin-bottom:10px" onclick="startAdaptiveQuiz()" id="lbl-retry">Try Again (Adapted)</button>
+    <button class="btn btn-s" onclick="goTo('S_home','n0')" id="lbl-back-home">Back to Home</button>
+    <div style="height:30px"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     PROBLEM GENERATOR
+══════════════════════════════════ -->
+<div class="screen" id="S_probgen">
+  <div class="topbar">
+    <div class="ibtn" onclick="goTo('S_home','n0')">‹</div>
+    <h2 id="lbl-pg-title">Problem Generator</h2>
+  </div>
+  <div class="sa" style="padding:14px 16px">
+    <div class="ig">
+      <div class="lbl" id="lbl-pg-subj">Subject</div>
+      <select class="sel" id="pg-subj" onchange="pgUpdateFormulas()"></select>
+    </div>
+    <div class="ig">
+      <div class="lbl" id="lbl-pg-formula">Formula</div>
+      <select class="sel" id="pg-formula" onchange="pgPreview()"></select>
+    </div>
+    <div style="background:var(--bg3);border:1px solid var(--brd);border-radius:10px;padding:14px;margin-bottom:14px;text-align:center">
+      <div style="font-size:10px;color:var(--txt3);margin-bottom:6px" id="lbl-pg-selected">Selected formula</div>
+      <div style="font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600;color:var(--acc)" id="pg-display">—</div>
+    </div>
+    <div class="ig">
+      <div class="lbl">Number of problems: <span id="pg-cnt-val">3</span></div>
+      <input type="range" min="1" max="8" value="3" step="1" id="pg-count" oninput="e('pg-cnt-val').textContent=this.value" style="width:100%;margin-top:6px">
+    </div>
+    <div class="ig">
+      <div class="lbl" id="lbl-pg-diff">Difficulty</div>
+      <select class="sel" id="pg-diff">
+        <option value="easy">Easy</option>
+        <option value="medium" selected>Medium</option>
+        <option value="hard">Hard</option>
+      </select>
+    </div>
+    <button class="btn btn-a" onclick="generateProblems()" style="margin-bottom:16px">⚡ Generate Problems</button>
+    <div id="pg-output"></div>
+    <div style="height:30px"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     HANDWRITING
+══════════════════════════════════ -->
+<div class="screen" id="S_hw">
+  <div class="topbar">
+    <div class="ibtn" onclick="goTo('S_home','n0')">‹</div>
+    <h2 id="lbl-hw-title">Handwriting Input</h2>
+    <div class="ibtn" onclick="hwUndo()" style="font-size:13px">↩</div>
+    <div class="ibtn" onclick="hwClear()" style="color:var(--red);font-size:11px;font-weight:700">CLR</div>
+  </div>
+  <div class="sa" style="padding:14px 16px">
+    <div style="font-size:12px;color:var(--txt2);margin-bottom:10px" id="lbl-hw-hint">Draw your formula with finger or stylus</div>
+    <canvas id="hw-canvas" width="358" height="200"></canvas>
+    <div style="display:flex;gap:6px;margin-top:6px;align-items:center;flex-wrap:wrap">
+      <div style="width:26px;height:26px;border-radius:7px;background:#6C63FF;cursor:pointer;border:2.5px solid #fff" onclick="hwSetColor('#6C63FF',this)"></div>
+      <div style="width:26px;height:26px;border-radius:7px;background:#4ECDC4;cursor:pointer;border:2px solid transparent" onclick="hwSetColor('#4ECDC4',this)"></div>
+      <div style="width:26px;height:26px;border-radius:7px;background:#FF6B6B;cursor:pointer;border:2px solid transparent" onclick="hwSetColor('#FF6B6B',this)"></div>
+      <div style="width:26px;height:26px;border-radius:7px;background:#FFD93D;cursor:pointer;border:2px solid transparent" onclick="hwSetColor('#FFD93D',this)"></div>
+      <div style="width:26px;height:26px;border-radius:7px;background:#F0F2F8;cursor:pointer;border:2px solid transparent" onclick="hwSetColor('#F0F2F8',this)"></div>
+      <span style="font-size:11px;color:var(--txt3);margin-left:4px">Size:</span>
+      <input type="range" min="1" max="8" value="3" step="1" id="hw-size" oninput="if(hwCtx)hwCtx.lineWidth=this.value" style="width:70px">
+    </div>
+    <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:10px;margin-bottom:12px" id="hw-sym-row"></div>
+    <div class="ig">
+      <div class="lbl" id="lbl-hw-expr">Formula text</div>
+      <input class="inp" id="hw-expr" placeholder="e.g. F = ma">
+    </div>
+    <div class="ig">
+      <div class="lbl" id="lbl-hw-desc">Description</div>
+      <input class="inp" id="hw-desc" placeholder="What does this formula mean?">
+    </div>
+    <div class="ig">
+      <div class="lbl" id="lbl-hw-subj">Save to subject</div>
+      <select class="sel" id="hw-subj"></select>
+    </div>
+    <button class="btn btn-a" onclick="hwSave()" id="lbl-hw-save">💾 Save Formula</button>
+    <div style="height:30px"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     FLASHCARDS
+══════════════════════════════════ -->
+<div class="screen" id="S_flash">
+  <div class="topbar">
+    <div class="ibtn" onclick="goTo('S_subj','n1')">‹</div>
+    <h2 id="lbl-flash-title">Flashcards</h2>
+    <div style="font-size:12px;color:var(--txt2)" id="flash-ctr">1 / 5</div>
+  </div>
+  <div style="display:flex;gap:8px;padding:10px 16px;border-bottom:1px solid var(--brd);flex-shrink:0">
+    <div class="sbox"><div class="sv" id="srs-new">0</div><div class="sl" id="lbl-srs-new">New</div></div>
+    <div class="sbox"><div class="sv" style="color:var(--ylw)" id="srs-learn">0</div><div class="sl" id="lbl-srs-learn">Learning</div></div>
+    <div class="sbox"><div class="sv" style="color:var(--teal)" id="srs-rev">0</div><div class="sl" id="lbl-srs-rev">Review</div></div>
+    <div class="sbox"><div class="sv" style="color:var(--grn)" id="srs-mast">0</div><div class="sl" id="lbl-srs-mast">Mastered</div></div>
+  </div>
+  <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:20px">
+    <div id="flashcard" onclick="flipCard()" style="width:100%;min-height:220px;background:var(--bg3);border:1px solid var(--brd);border-radius:18px;padding:28px 22px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:background .2s;user-select:none">
+      <div style="font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px" id="fc-side">Question — tap to flip</div>
+      <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:600;text-align:center;margin-bottom:10px" id="fc-main"></div>
+      <div style="font-size:12px;color:var(--txt2);text-align:center" id="fc-sub"></div>
+    </div>
+  </div>
+  <div style="padding:0 16px calc(12px + var(--safe-bot));display:flex;gap:10px;flex-shrink:0">
+    <div style="flex:1;text-align:center">
+      <button style="width:100%;background:#FF6B6B11;border:1.5px solid #FF6B6B66;border-radius:12px;padding:13px;color:var(--red);font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif" onclick="rateFlash('again')" id="lbl-again">Again</button>
+      <div style="font-size:9px;color:var(--txt3);margin-top:4px">&lt;1 min</div>
+    </div>
+    <div style="flex:1;text-align:center">
+      <button style="width:100%;background:#4ECDC411;border:1.5px solid #4ECDC466;border-radius:12px;padding:13px;color:var(--teal);font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif" onclick="rateFlash('good')" id="lbl-good">Good</button>
+      <div style="font-size:9px;color:var(--txt3);margin-top:4px">10 min</div>
+    </div>
+    <div style="flex:1;text-align:center">
+      <button style="width:100%;background:#95E06C11;border:1.5px solid #95E06C66;border-radius:12px;padding:13px;color:var(--grn);font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif" onclick="rateFlash('easy')" id="lbl-easy-f">Easy</button>
+      <div style="font-size:9px;color:var(--txt3);margin-top:4px">4 days</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     PROGRESS
+══════════════════════════════════ -->
+<div class="screen" id="S_progress">
+  <div class="topbar">
+    <div class="ibtn" onclick="goTo('S_home','n0')">‹</div>
+    <h2 id="lbl-progress">Progress</h2>
+  </div>
+  <div class="sa" style="padding:14px 16px 20px" id="progress-body"></div>
+</div>
+
+<!-- ══════════════════════════════════
+     SETTINGS
+══════════════════════════════════ -->
+<div class="screen" id="S_settings">
+  <div class="topbar">
+    <div class="ibtn" onclick="goTo('S_home','n0')">‹</div>
+    <h2 id="lbl-settings">Settings</h2>
+  </div>
+  <div class="sa" style="padding:14px 16px">
+    <div class="stitle" id="lbl-lang-sec">Language / ភាសា / Langue</div>
+    <div style="display:flex;gap:10px;margin-bottom:16px">
+      <div id="lang-en" class="card" style="margin:0;flex:1;text-align:center;border-color:var(--acc);border-width:2px" onclick="setLang('en')"><div style="font-size:26px">🇬🇧</div><div style="font-size:12px;margin-top:5px;font-weight:600">English</div></div>
+      <div id="lang-km" class="card" style="margin:0;flex:1;text-align:center" onclick="setLang('km')"><div style="font-size:26px">🇰🇭</div><div style="font-size:12px;margin-top:5px;font-weight:600">ខ្មែរ</div></div>
+      <div id="lang-fr" class="card" style="margin:0;flex:1;text-align:center" onclick="setLang('fr')"><div style="font-size:26px">🇫🇷</div><div style="font-size:12px;margin-top:5px;font-weight:600">Français</div></div>
+    </div>
+    <div class="stitle" id="lbl-exam-sec">Exam Settings</div>
+    <div class="card" style="margin:0 0 10px;cursor:default">
+      <div class="lbl" id="lbl-exam-dur">Exam duration (minutes)</div>
+      <input type="range" min="5" max="60" value="15" step="5" id="exam-dur" oninput="e('exam-dur-val').textContent=this.value" style="width:100%;margin-top:6px">
+      <div style="text-align:right;font-size:12px;color:var(--txt2);margin-top:4px"><span id="exam-dur-val">15</span> min</div>
+    </div>
+    <div class="card" style="margin:0 0 10px;cursor:default">
+      <div class="lbl" id="lbl-quiz-qs">Questions per quiz</div>
+      <input type="range" min="3" max="20" value="6" step="1" id="quiz-count" oninput="e('quiz-cnt-val').textContent=this.value" style="width:100%;margin-top:6px">
+      <div style="text-align:right;font-size:12px;color:var(--txt2);margin-top:4px"><span id="quiz-cnt-val">6</span> questions</div>
+    </div>
+    <div class="stitle" id="lbl-data-sec">Data & Storage</div>
+    <div style="font-size:12px;color:var(--txt2);margin-bottom:12px">All data is saved locally on your device using localStorage.</div>
+    <button class="btn btn-s" style="margin-bottom:10px" onclick="exportData()">📤 Export Data (JSON)</button>
+    <button class="btn btn-s" style="margin-bottom:10px" onclick="triggerImport()">📥 Import Data (JSON)</button>
+    <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)">
+    <button class="btn btn-r" onclick="if(confirm('Clear ALL data? This cannot be undone.'))clearAllData()">🗑 Clear All Data</button>
+    <div style="margin-top:16px;padding:12px;background:var(--bg3);border:1px solid var(--brd);border-radius:10px">
+      <div style="font-size:10px;color:var(--txt3);text-align:center">StudyForge v3.0 · Built for WebViewGold & Vercel</div>
+    </div>
+    <div style="height:30px"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     MODALS
+══════════════════════════════════ -->
+
+<!-- Add Subject -->
+<div class="mwrap" id="M_addSubject" style="display:none" onclick="if(event.target===this)closeModal('M_addSubject')">
+  <div class="modal">
+    <h3 id="lbl-add-subj">Add Subject</h3>
+    <div class="ig"><div class="lbl">Name</div><input class="inp" id="as-name" placeholder="e.g. History, Geography..."></div>
+    <div class="ig"><div class="lbl">Icon (emoji)</div><input class="inp" id="as-icon" placeholder="📖" maxlength="2"></div>
+    <div class="ig">
+      <div class="lbl">Color</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap" id="color-picker">
+        <div data-c="#6C63FF" onclick="pickColor(this)" style="width:32px;height:32px;border-radius:9px;background:#6C63FF;cursor:pointer;border:2.5px solid #fff"></div>
+        <div data-c="#FF6B6B" onclick="pickColor(this)" style="width:32px;height:32px;border-radius:9px;background:#FF6B6B;cursor:pointer;border:2px solid transparent"></div>
+        <div data-c="#4ECDC4" onclick="pickColor(this)" style="width:32px;height:32px;border-radius:9px;background:#4ECDC4;cursor:pointer;border:2px solid transparent"></div>
+        <div data-c="#95E06C" onclick="pickColor(this)" style="width:32px;height:32px;border-radius:9px;background:#95E06C;cursor:pointer;border:2px solid transparent"></div>
+        <div data-c="#FFD93D" onclick="pickColor(this)" style="width:32px;height:32px;border-radius:9px;background:#FFD93D;cursor:pointer;border:2px solid transparent"></div>
+        <div data-c="#FF9F43" onclick="pickColor(this)" style="width:32px;height:32px;border-radius:9px;background:#FF9F43;cursor:pointer;border:2px solid transparent"></div>
+        <div data-c="#A29BFE" onclick="pickColor(this)" style="width:32px;height:32px;border-radius:9px;background:#A29BFE;cursor:pointer;border:2px solid transparent"></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-s" style="flex:1" onclick="closeModal('M_addSubject')">Cancel</button>
+      <button class="btn btn-a" style="flex:2" onclick="saveSubject()">Add Subject</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit Formula -->
+<div class="mwrap" id="M_formula" style="display:none" onclick="if(event.target===this)closeModal('M_formula')">
+  <div class="modal">
+    <h3 id="modal-f-title">Add Formula</h3>
+    <div class="ig">
+      <div class="lbl" id="lbl-mf-expr">Formula / Expression</div>
+      <input class="inp" id="mf-expr" placeholder="e.g. F = ma">
+    </div>
+    <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px" id="sym-row"></div>
+    <div class="ig">
+      <div class="lbl" id="lbl-mf-desc">Description</div>
+      <input class="inp" id="mf-desc" placeholder="What does this formula represent?">
+    </div>
+    <div class="ig">
+      <div class="lbl" id="lbl-mf-lesson">Lesson</div>
+      <select class="sel" id="mf-lesson"></select>
+    </div>
+    <div class="ig">
+      <div class="lbl" id="lbl-mf-vars">Variables (e.g. m=10, a=9.8, t=5s)</div>
+      <input class="inp" id="mf-vars" placeholder="m=10, a=9.8">
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-s" style="flex:1" onclick="closeModal('M_formula')">Cancel</button>
+      <button class="btn btn-a" style="flex:2" id="mf-save-btn" onclick="saveFormula()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Manage Lessons -->
+<div class="mwrap" id="M_lessons" style="display:none" onclick="if(event.target===this)closeModal('M_lessons')">
+  <div class="modal">
+    <h3 id="lbl-manage-lessons">Manage Lessons</h3>
+    <div id="lesson-modal-list" style="margin-bottom:14px"></div>
+    <div style="display:flex;gap:8px;margin-bottom:14px">
+      <input class="inp" id="new-lesson-inp" placeholder="New lesson name..." style="flex:1" onkeydown="if(event.key==='Enter')addLesson()">
+      <button class="btn btn-a" style="width:46px;padding:0;border-radius:10px" onclick="addLesson()">+</button>
+    </div>
+    <button class="btn btn-s" onclick="closeModal('M_lessons')">Done</button>
+  </div>
+</div>
+
+<!-- Language -->
+<div class="mwrap" id="M_lang" style="display:none" onclick="if(event.target===this)closeModal('M_lang')">
+  <div class="modal">
+    <h3>Select Language / ជ្រើស​ភាសា / Choisir la langue</h3>
+    <div style="display:flex;gap:10px;margin-bottom:16px">
+      <div class="card" style="margin:0;flex:1;text-align:center" onclick="setLang('en');closeModal('M_lang')"><div style="font-size:30px">🇬🇧</div><div style="margin-top:6px;font-weight:600">English</div></div>
+      <div class="card" style="margin:0;flex:1;text-align:center" onclick="setLang('km');closeModal('M_lang')"><div style="font-size:30px">🇰🇭</div><div style="margin-top:6px;font-weight:600">ខ្មែរ</div></div>
+      <div class="card" style="margin:0;flex:1;text-align:center" onclick="setLang('fr');closeModal('M_lang')"><div style="font-size:30px">🇫🇷</div><div style="margin-top:6px;font-weight:600">Français</div></div>
+    </div>
+    <button class="btn btn-s" onclick="closeModal('M_lang')">Close</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+</div><!-- end #app -->
+
+<script>
+// ═══════════════════════════════════════
+// LANGUAGE DATA
+// ═══════════════════════════════════════
+const LANGS={
+  en:{flag:'EN',greeting:'Good morning, Student 👋',ready:'Ready to study?',streak:'Day streak',accuracy:'Avg accuracy',formulas:'Formulas',subjects:'Subjects',quick:'Quick Actions',smart:'Smart Quiz',adaptive:'Adaptive · AI-powered',exam:'Exam Mode','exam-sub':'Timed · No hints',probgen:'Problem Gen','probgen-sub':'Apply formulas',hw:'Handwriting','hw-sub':'Draw formulas',weak:'Weak Areas','all-subj':'All Subjects',progress:'Progress',settings:'Settings','n-home':'Home','n-subj':'Subjects','n-quiz':'Quiz','n-prog':'Progress','n-set':'Settings','quiz-title':'Smart Quiz','no-hints':'No hints · No answers','pg-title':'Problem Generator','pg-subj':'Subject','pg-formula':'Formula','pg-selected':'Selected formula','pg-diff':'Difficulty','hw-title':'Handwriting Input','hw-hint':'Draw your formula with finger or stylus','hw-expr':'Formula text','hw-desc':'Description','hw-subj':'Save to subject','hw-save':'💾 Save Formula','flash-title':'Flashcards','srs-new':'New','srs-learn':'Learning','srs-rev':'Review','srs-mast':'Mastered',again:'Again',good:'Good','easy-f':'Easy',result:'Quiz Complete!','weak-focus':'📍 Focus on these weak areas:',retry:'Try Again (Adapted)','back-home':'Back to Home','lang-sec':'Language','exam-sec':'Exam Settings','exam-dur':'Exam duration (minutes)','quiz-qs':'Questions per quiz','data-sec':'Data & Storage','add-subj':'Add Subject','mf-expr':'Formula / Expression','mf-desc':'Description','mf-lesson':'Lesson','mf-vars':'Variables (e.g. m=10, a=9.8)','sd-f':'Formulas','sd-m':'Mastered','sd-a':'Accuracy','manage-lessons':'Manage Lessons','exam-title':'Exam Mode',
+    q_types:{mc:'Multiple Choice',fill:'Fill in the Blank',apply:'Apply Formula'},
+    correct:'✓ Correct!',wrong_pre:'✗ Answer: ',
+    prob_given:'Given:',prob_find:'Find',prob_use:'Use:',
+    grade:{A:'Excellent! 🎉',B:'Good Job! 👍',C:'Keep Going 📖',D:'Needs Work 💪'},
+    no_weak:'No weak areas — great work!',
+    bd:{correct:'Correct',wrong:'Wrong',acc:'Accuracy',time:'Time'}
+  },
+  km:{flag:'ខ្មែរ',greeting:'អរុណ​សួស្ដី​ សិស្ស 👋',ready:'ត្រៀម​ខ្លួន​រៀន?',streak:'ថ្ងៃ​បន្ត',accuracy:'ភាព​ត្រឹម​ត្រូវ',formulas:'រូប​មន្ត',subjects:'មុខ​វិជ្ជា',quick:'សកម្ម​ភាព​រហ័ស',smart:'វិញ្ញាសា​ឆ្លាត',adaptive:'សម្រប​តាម · ចំណុច​ខ្សោយ',exam:'ប្រឡង','exam-sub':'មាន​ម៉ោង · គ្មាន​ជំនួយ',probgen:'បង្កើត​លំ​ហាត់','probgen-sub':'ប្រើ​រូប​មន្ត',hw:'សរសេរ​ដោយ​ដៃ','hw-sub':'គូរ​រូប​មន្ត',weak:'ចំណុច​ខ្សោយ','all-subj':'មុខ​វិជ្ជា​ទាំង​អស់',progress:'វឌ្ឍ​នភាព',settings:'ការ​កំណត់','n-home':'ទំព័រ','n-subj':'វិជ្ជា','n-quiz':'វិញ្ញាសា','n-prog':'វឌ្ឍន','n-set':'ការ​កំណត់','quiz-title':'វិញ្ញាសា​ឆ្លាត','no-hints':'គ្មាន​ជំនួយ','pg-title':'បង្កើត​លំ​ហាត់','pg-subj':'មុខ​វិជ្ជា','pg-formula':'រូប​មន្ត','pg-selected':'រូប​មន្ត​ដែល​ជ្រើស','pg-diff':'ភាព​ពិបាក','hw-title':'ការ​បញ្ចូល​ដោយ​ដៃ','hw-hint':'គូរ​រូប​មន្ត​ខាង​ក្រោម','hw-expr':'រូប​មន្ត','hw-desc':'ការ​ពិពណ៌​នា','hw-subj':'រក្សា​ទុក​ក្នុង','hw-save':'💾 រក្សា​ទុក','flash-title':'ស្លាក','srs-new':'ថ្មី','srs-learn':'រៀន','srs-rev':'ពិនិត្យ','srs-mast':'ស្ទាត់',again:'ម្ដង​ទៀត',good:'ល្អ','easy-f':'ងាយ',result:'វិញ្ញាសា​ចប់!','weak-focus':'📍 ផ្ដោត​លើ​ចំណុច​ខ្សោយ:',retry:'ព្យាយាម​ម្ដង​ទៀត','back-home':'ទៅ​ទំព័រ​ដើម','lang-sec':'ភាសា','exam-sec':'ការ​កំណត់​ប្រឡង','exam-dur':'រយៈ​ពេល​ប្រឡង (នាទី)','quiz-qs':'សំណួរ​ក្នុង​មួយ​វិញ្ញាសា','data-sec':'ទិន្នន័យ','add-subj':'បន្ថែម​មុខ​វិជ្ជា','mf-expr':'រូប​មន្ត','mf-desc':'ការ​ពិពណ៌​នា','mf-lesson':'មេរៀន','mf-vars':'អថេរ (ឧ m=10, a=9.8)','sd-f':'រូប​មន្ត','sd-m':'ស្ទាត់','sd-a':'ភាព​ត្រឹម​ត្រូវ','manage-lessons':'គ្រប់​គ្រង​មេរៀន','exam-title':'ប្រឡង',
+    q_types:{mc:'ជ្រើស​ច​ម្លើយ',fill:'បំពេញ​ចន្លោះ',apply:'ប្រើ​រូប​មន្ត'},
+    correct:'✓ ត្រឹម​ត្រូវ!',wrong_pre:'✗ ចម្លើយ: ',
+    prob_given:'ផ្ដល់:',prob_find:'រក',prob_use:'ប្រើ:',
+    grade:{A:'ល្អ​ណាស់! 🎉',B:'ល្អ! 👍',C:'បន្ត​ព្យាយាម 📖',D:'ត្រូវ​ការ​ខំ​ប្រឹង 💪'},
+    no_weak:'គ្មាន​ចំណុច​ខ្សោយ!',
+    bd:{correct:'ត្រឹម​ត្រូវ',wrong:'ខុស',acc:'ភាព​ត្រឹម​ត្រូវ',time:'ពេល​វេលា'}
+  },
+  fr:{flag:'FR',greeting:'Bonjour, Étudiant(e) 👋',ready:'Prêt(e) à étudier?',streak:'Jours consécutifs',accuracy:'Précision moy.',formulas:'Formules',subjects:'Matières',quick:'Actions rapides',smart:'Quiz intelligent',adaptive:'Adaptatif · IA',exam:'Mode Examen','exam-sub':'Chronométré · Sans indices',probgen:'Générateur','probgen-sub':'Appliquer les formules',hw:'Écriture manuelle','hw-sub':'Dessiner des formules',weak:'Points faibles','all-subj':'Toutes les matières',progress:'Progression',settings:'Paramètres','n-home':'Accueil','n-subj':'Matières','n-quiz':'Quiz','n-prog':'Progrès','n-set':'Réglages','quiz-title':'Quiz intelligent','no-hints':'Aucun indice','pg-title':'Générateur de problèmes','pg-subj':'Matière','pg-formula':'Formule','pg-selected':'Formule sélectionnée','pg-diff':'Difficulté','hw-title':'Saisie manuscrite','hw-hint':'Dessinez votre formule ci-dessous','hw-expr':'Texte de la formule','hw-desc':'Description','hw-subj':'Enregistrer dans','hw-save':'💾 Enregistrer','flash-title':'Fiches','srs-new':'Nouveau','srs-learn':'Apprentissage','srs-rev':'Révision','srs-mast':'Maîtrisé',again:'Encore',good:'Bien','easy-f':'Facile',result:'Quiz terminé!','weak-focus':'📍 Points à travailler:',retry:'Réessayer (adapté)','back-home':'Retour accueil','lang-sec':'Langue','exam-sec':'Paramètres d\'examen','exam-dur':'Durée d\'examen (minutes)','quiz-qs':'Questions par quiz','data-sec':'Données','add-subj':'Ajouter une matière','mf-expr':'Formule / Expression','mf-desc':'Description','mf-lesson':'Leçon','mf-vars':'Variables (ex: m=10, a=9.8)','sd-f':'Formules','sd-m':'Maîtrisées','sd-a':'Précision','manage-lessons':'Gérer les leçons','exam-title':'Mode Examen',
+    q_types:{mc:'Choix multiple',fill:'Texte à trous',apply:'Appliquer'},
+    correct:'✓ Correct!',wrong_pre:'✗ Réponse: ',
+    prob_given:'Données:',prob_find:'Trouver',prob_use:'Utiliser:',
+    grade:{A:'Excellent! 🎉',B:'Bien joué! 👍',C:'Continuez 📖',D:'À retravailler 💪'},
+    no_weak:'Aucun point faible — bravo!',
+    bd:{correct:'Correct',wrong:'Incorrect',acc:'Précision',time:'Temps'}
+  }
+};
+let lang='en';
+const T=k=>(LANGS[lang]&&LANGS[lang][k])||LANGS.en[k]||k;
+
+// ═══════════════════════════════════════
+// DEFAULT DATA
+// ═══════════════════════════════════════
+const DEFAULT_DATA={subjects:[
+  {id:'math',name:'Mathematics',icon:'∑',color:'#6C63FF',lessons:['Algebra','Calculus','Geometry','Trigonometry'],formulas:[
+    {id:'f1',expr:'x = (-b ± √(b²-4ac)) / 2a',desc:'Quadratic formula',lesson:'Algebra',attempts:4,correct:2,ease:2.5,interval:1,vars:[{n:'a',v:1,unit:''},{n:'b',v:-5,unit:''},{n:'c',v:6,unit:''}]},
+    {id:'f2',expr:'a² + b² = c²',desc:'Pythagorean theorem',lesson:'Geometry',attempts:6,correct:6,ease:3.0,interval:4,vars:[{n:'a',v:3,unit:'cm'},{n:'b',v:4,unit:'cm'}]},
+    {id:'f3',expr:'d/dx[xⁿ] = nxⁿ⁻¹',desc:'Power rule for derivatives',lesson:'Calculus',attempts:3,correct:1,ease:2.0,interval:1,vars:[]},
+    {id:'f4',expr:'sin²θ + cos²θ = 1',desc:'Pythagorean trig identity',lesson:'Trigonometry',attempts:2,correct:2,ease:2.5,interval:2,vars:[]},
+    {id:'f5',expr:'A = πr²',desc:'Area of a circle',lesson:'Geometry',attempts:5,correct:3,ease:2.2,interval:1,vars:[{n:'r',v:7,unit:'cm'}]},
+  ]},
+  {id:'physics',name:'Physics',icon:'⚡',color:'#FF6B6B',lessons:['Mechanics','Waves','Thermodynamics','Electromagnetism'],formulas:[
+    {id:'f6',expr:'F = ma',desc:"Newton's 2nd law",lesson:'Mechanics',attempts:8,correct:8,ease:3.5,interval:7,vars:[{n:'m',v:10,unit:'kg'},{n:'a',v:9.8,unit:'m/s²'}]},
+    {id:'f7',expr:'E = mc²',desc:'Mass-energy equivalence',lesson:'Mechanics',attempts:2,correct:0,ease:1.5,interval:1,vars:[]},
+    {id:'f8',expr:'v = u + at',desc:'Kinematic velocity',lesson:'Mechanics',attempts:5,correct:3,ease:2.3,interval:1,vars:[{n:'u',v:0,unit:'m/s'},{n:'a',v:5,unit:'m/s²'},{n:'t',v:4,unit:'s'}]},
+    {id:'f9',expr:'P = IV',desc:'Electric power',lesson:'Electromagnetism',attempts:3,correct:1,ease:2.0,interval:1,vars:[{n:'I',v:3,unit:'A'},{n:'V',v:12,unit:'V'}]},
+    {id:'f10',expr:'f = 1/T',desc:'Frequency = 1 / Period',lesson:'Waves',attempts:1,correct:0,ease:2.5,interval:1,vars:[{n:'T',v:0.5,unit:'s'}]},
+  ]},
+  {id:'chem',name:'Chemistry',icon:'⚗',color:'#4ECDC4',lessons:['Organic','Inorganic','Physical','Electrochemistry'],formulas:[
+    {id:'f11',expr:'PV = nRT',desc:'Ideal gas law',lesson:'Physical',attempts:4,correct:2,ease:2.1,interval:1,vars:[{n:'n',v:2,unit:'mol'},{n:'T',v:300,unit:'K'}]},
+    {id:'f12',expr:'pH = -log[H⁺]',desc:'pH definition',lesson:'Physical',attempts:2,correct:0,ease:1.8,interval:1,vars:[]},
+    {id:'f13',expr:'ΔG = ΔH - TΔS',desc:'Gibbs free energy',lesson:'Physical',attempts:0,correct:0,ease:2.5,interval:1,vars:[]},
+  ]},
+  {id:'bio',name:'Biology',icon:'🧬',color:'#95E06C',lessons:['Cell Biology','Genetics','Ecology','Physiology'],formulas:[
+    {id:'f14',expr:'ATP → ADP + Pᵢ + Energy',desc:'ATP hydrolysis',lesson:'Cell Biology',attempts:3,correct:3,ease:3.0,interval:3,vars:[]},
+    {id:'f15',expr:'DNA → mRNA → Protein',desc:'Central dogma',lesson:'Genetics',attempts:2,correct:1,ease:2.2,interval:1,vars:[]},
+  ]},
+  {id:'french',name:'French',icon:'🇫🇷',color:'#FFD93D',lessons:['Grammar','Vocabulary','Conjugation','Phrases'],formulas:[
+    {id:'f16',expr:'être: suis, es, est, sommes, êtes, sont',desc:'être — present tense',lesson:'Conjugation',attempts:4,correct:3,ease:2.6,interval:2,vars:[]},
+    {id:'f17',expr:'avoir: ai, as, a, avons, avez, ont',desc:'avoir — present tense',lesson:'Conjugation',attempts:3,correct:2,ease:2.3,interval:1,vars:[]},
+  ]},
+]};
+
+// ═══════════════════════════════════════
+// PERSISTENT STORAGE (localStorage)
+// ═══════════════════════════════════════
+let DB;
+function loadDB(){
+  try{
+    const saved=localStorage.getItem('studyforge_db');
+    DB=saved?JSON.parse(saved):JSON.parse(JSON.stringify(DEFAULT_DATA));
+  }catch(err){DB=JSON.parse(JSON.stringify(DEFAULT_DATA))}
+}
+function saveDB(){
+  try{localStorage.setItem('studyforge_db',JSON.stringify(DB))}
+  catch(err){showToast('Storage full — try exporting data')}
+}
+function clearAllData(){
+  localStorage.removeItem('studyforge_db');
+  DB=JSON.parse(JSON.stringify(DEFAULT_DATA));
+  renderHome();renderSubjectsList();
+  showToast('All data cleared');
+}
+
+// ═══════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════
+const e=id=>document.getElementById(id);
+function goTo(scr,nav){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  e(scr).classList.add('active');
+  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
+  if(nav&&e(nav))e(nav).classList.add('active');
+  if(scr==='S_progress')renderProgress();
+  if(scr==='S_subjects')renderSubjectsList();
+  if(scr==='S_hw'){initHwCanvas();initHwSubjSel()}
+  if(scr==='S_probgen')initProbGen();
+}
+function openModal(id){e(id).style.display='flex'}
+function closeModal(id){e(id).style.display='none'}
+function showToast(msg,dur=2000){
+  const t=e('toast');t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),dur);
+}
+const fAcc=f=>f.attempts?Math.round(f.correct/f.attempts*100):0;
+const sAcc=s=>{const t=s.formulas.reduce((a,f)=>a+f.attempts,0),c=s.formulas.reduce((a,f)=>a+f.correct,0);return t?Math.round(c/t*100):0};
+const isMastered=f=>f.attempts>=3&&fAcc(f)>=80;
+const isWeak=f=>f.attempts>=2&&fAcc(f)<60;
+
+// ═══════════════════════════════════════
+// LANGUAGE
+// ═══════════════════════════════════════
+function setLang(l){
+  lang=l;
+  localStorage.setItem('studyforge_lang',l);
+  const MAP={
+    'lbl-greeting':'greeting','lbl-ready':'ready','lbl-streak':'streak','lbl-accuracy':'accuracy',
+    'lbl-formulas':'formulas','lbl-subjects':'subjects','lbl-quick':'quick','lbl-smart':'smart',
+    'lbl-adaptive':'adaptive','lbl-exam':'exam','lbl-exam-sub':'exam-sub','lbl-probgen':'probgen',
+    'lbl-probgen-sub':'probgen-sub','lbl-hw':'hw','lbl-hw-sub':'hw-sub','lbl-weak':'weak',
+    'lbl-all-subj':'all-subj','lbl-progress':'progress','lbl-settings':'settings',
+    'lbl-n-home':'n-home','lbl-n-subj':'n-subj','lbl-n-quiz':'n-quiz',
+    'lbl-n-prog':'n-prog','lbl-n-set':'n-set','lbl-quiz-title':'quiz-title',
+    'lbl-no-hints':'no-hints','lbl-pg-title':'pg-title','lbl-pg-subj':'pg-subj',
+    'lbl-pg-formula':'pg-formula','lbl-pg-selected':'pg-selected','lbl-pg-diff':'pg-diff',
+    'lbl-hw-title':'hw-title','lbl-hw-hint':'hw-hint','lbl-hw-expr':'hw-expr',
+    'lbl-hw-desc':'hw-desc','lbl-hw-subj':'hw-subj','lbl-hw-save':'hw-save',
+    'lbl-flash-title':'flash-title','lbl-srs-new':'srs-new','lbl-srs-learn':'srs-learn',
+    'lbl-srs-rev':'srs-rev','lbl-srs-mast':'srs-mast','lbl-again':'again',
+    'lbl-good':'good','lbl-easy-f':'easy-f','lbl-result':'result',
+    'lbl-weak-focus':'weak-focus','lbl-retry':'retry','lbl-back-home':'back-home',
+    'lbl-lang-sec':'lang-sec','lbl-exam-sec':'exam-sec','lbl-exam-dur':'exam-dur',
+    'lbl-quiz-qs':'quiz-qs','lbl-data-sec':'data-sec','lbl-add-subj':'add-subj',
+    'lbl-mf-expr':'mf-expr','lbl-mf-desc':'mf-desc','lbl-mf-lesson':'mf-lesson',
+    'lbl-mf-vars':'mf-vars','lbl-sd-f':'sd-f','lbl-sd-m':'sd-m','lbl-sd-a':'sd-a',
+    'lbl-manage-lessons':'manage-lessons','lbl-exam-title':'exam-title',
+    'q-mode-label':'adaptive','lang-flag':'flag'
+  };
+  Object.entries(MAP).forEach(([id,key])=>{const el=e(id);if(el)el.textContent=T(key)});
+  ['en','km','fr'].forEach(lc=>{const el=e('lang-'+lc);if(el){el.style.borderColor=lc===l?'var(--acc)':'var(--brd)';el.style.borderWidth=lc===l?'2px':'1px'}});
+  renderHome();renderSubjectsList();
+}
+
+// ═══════════════════════════════════════
+// HOME
+// ═══════════════════════════════════════
+function renderHome(){
+  let tF=0,tA=0,tC=0;
+  DB.subjects.forEach(s=>s.formulas.forEach(f=>{tF++;tA+=f.attempts;tC+=f.correct}));
+  e('h-formulas').textContent=tF;
+  e('h-acc').textContent=tA?Math.round(tC/tA*100)+'%':'—';
+  e('home-grid').innerHTML='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px">'+
+    DB.subjects.map(s=>`<div style="background:var(--bg3);border:1px solid var(--brd);border-left:3px solid ${s.color};border-radius:12px;padding:12px;cursor:pointer" onclick="openSubject('${s.id}')">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px"><span style="font-size:18px">${s.icon}</span><span style="font-size:12px;font-weight:600">${s.name}</span></div>
+      <div style="font-size:10px;color:var(--txt3);margin-bottom:6px">${s.formulas.length} ${T('formulas')}</div>
+      <div class="prog"><div class="pf" style="width:${sAcc(s)}%;background:${s.color}"></div></div>
+      <div style="font-size:10px;color:var(--txt2);margin-top:3px">${sAcc(s)}%</div>
+    </div>`).join('')+'</div>';
+  const weak=[];
+  DB.subjects.forEach(s=>s.formulas.forEach(f=>{if(isWeak(f))weak.push({f,s})}));
+  weak.sort((a,b)=>fAcc(a.f)-fAcc(b.f));
+  e('home-weak').innerHTML=weak.length?weak.slice(0,4).map(({f,s})=>`
+    <div style="background:var(--bg3);border:1px solid var(--brd);border-left:3px solid ${s.color};border-radius:12px;padding:11px 13px;margin-bottom:9px">
+      <div style="display:flex;align-items:center;gap:8px"><div style="flex:1"><div style="font-size:12px;font-weight:600">${f.expr}</div><div style="font-size:10px;color:var(--txt2);margin-top:2px">${s.name} · ${f.lesson}</div></div>
+      <div style="text-align:right"><div style="font-size:14px;font-weight:700;color:var(--red)">${fAcc(f)}%</div><div style="font-size:9px;color:var(--txt3)">${f.attempts} attempts</div></div></div>
+      <div class="prog" style="margin-top:7px"><div class="pf" style="width:${fAcc(f)}%;background:var(--red)"></div></div>
+    </div>`).join(''):
+    `<div style="font-size:12px;color:var(--txt3);padding:0 0 14px">${T('no_weak')}</div>`;
+}
+
+// ═══════════════════════════════════════
+// SUBJECTS
+// ═══════════════════════════════════════
+function renderSubjectsList(){
+  e('subjects-list').innerHTML=DB.subjects.map(s=>`
+    <div style="background:var(--bg3);border:1px solid var(--brd);border-left:3px solid ${s.color};border-radius:12px;padding:13px 14px;margin-bottom:10px;display:flex;align-items:center;gap:12px;cursor:pointer" onclick="openSubject('${s.id}')">
+      <span style="font-size:26px">${s.icon}</span>
+      <div style="flex:1"><div style="font-size:14px;font-weight:600">${s.name}</div>
+        <div style="font-size:11px;color:var(--txt2);margin-top:2px">${s.formulas.length} ${T('formulas')} · ${s.lessons.length} lessons</div>
+        <div class="prog" style="margin-top:6px"><div class="pf" style="width:${sAcc(s)}%;background:${s.color}"></div></div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:16px;font-weight:700;color:${s.color}">${sAcc(s)}%</div>
+        <button style="background:transparent;border:none;color:var(--red);font-size:11px;cursor:pointer;margin-top:4px" onclick="event.stopPropagation();deleteSubject('${s.id}')">Remove</button>
+      </div>
+    </div>`).join('');
+}
+let selColor='#6C63FF';
+function pickColor(el){document.querySelectorAll('#color-picker div').forEach(d=>d.style.borderColor='transparent');el.style.borderColor='#fff';selColor=el.dataset.c}
+function openAddSubject(){e('as-name').value='';e('as-icon').value='';selColor='#6C63FF';openModal('M_addSubject')}
+function saveSubject(){
+  const name=e('as-name').value.trim();if(!name)return;
+  DB.subjects.push({id:'s_'+Date.now(),name,icon:e('as-icon').value||'📖',color:selColor,lessons:['General'],formulas:[]});
+  saveDB();closeModal('M_addSubject');renderSubjectsList();renderHome();showToast('Subject added!');
+}
+function deleteSubject(id){
+  if(!confirm('Delete this subject and all its formulas?'))return;
+  const i=DB.subjects.findIndex(s=>s.id===id);
+  if(i>=0)DB.subjects.splice(i,1);
+  saveDB();renderSubjectsList();renderHome();
+}
+
+// ═══════════════════════════════════════
+// SUBJECT DETAIL
+// ═══════════════════════════════════════
+let curSubj=null,curLesson='all',editFIdx=-1;
+function openSubject(id){
+  curSubj=DB.subjects.find(s=>s.id===id);curLesson='all';
+  e('sd-name').textContent=curSubj.name;
+  e('sd-search').style.display='none';e('sd-search').value='';
+  renderSDStats();renderLessonChips();renderFormulaList();
+  goTo('S_subj','n1');
+}
+function renderSDStats(){
+  e('sd-cnt').textContent=curSubj.formulas.length;
+  e('sd-mastered').textContent=curSubj.formulas.filter(isMastered).length;
+  e('sd-acc').textContent=sAcc(curSubj)+'%';
+}
+function renderLessonChips(){
+  e('lesson-chips').innerHTML=[{name:'All'},...curSubj.lessons.map(l=>({name:l}))].map(l=>
+    `<div class="chip${(l.name==='All'&&curLesson==='all')||(l.name===curLesson)?' on':''}" onclick="setLesson('${l.name}')">${l.name}</div>`
+  ).join('');
+}
+function setLesson(l){curLesson=l==='All'?'all':l;renderLessonChips();renderFormulaList()}
+function toggleSDSearch(){const s=e('sd-search');s.style.display=s.style.display==='none'?'block':'none';if(s.style.display!=='none')s.focus()}
+function renderFormulaList(){
+  const q=(e('sd-search').value||'').toLowerCase();
+  let list=curSubj.formulas.filter(f=>(curLesson==='all'||f.lesson===curLesson)&&(!q||(f.expr+f.desc).toLowerCase().includes(q)));
+  if(!list.length){e('formula-list').innerHTML='<div style="padding:20px;text-align:center;color:var(--txt3);font-size:13px">No formulas yet — tap + to add one!</div>';return}
+  e('formula-list').innerHTML=list.map(f=>{
+    const ri=curSubj.formulas.indexOf(f);
+    const a=fAcc(f);const acol=a>=80?'var(--grn)':a>=50?'var(--ylw)':'var(--red)';
+    return`<div style="background:var(--bg3);border:1px solid var(--brd);border-left:3px solid ${curSubj.color};border-radius:12px;padding:12px 14px;margin-bottom:9px">
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:7px">
+        <span class="tag" style="background:${curSubj.color}22;color:${curSubj.color}">${f.lesson}</span>
+        ${f.attempts>0?`<span class="tag" style="background:${a>=80?'#95E06C22':a>=50?'#FFD93D22':'#FF6B6B22'};color:${acol}">${a}%</span>`:''}
+        ${isMastered(f)?'<span class="tag" style="background:#95E06C22;color:var(--grn)">✓ Mastered</span>':''}
+      </div>
+      <div style="font-family:\'Space Grotesk\',sans-serif;font-size:14px;font-weight:600;margin-bottom:4px">${f.expr}</div>
+      <div style="font-size:11px;color:var(--txt2)">${f.desc}</div>
+      ${f.attempts>0?`<div class="prog" style="margin-top:8px"><div class="pf" style="width:${a}%;background:${acol}"></div></div>`:''}
+      <div style="display:flex;gap:7px;margin-top:10px">
+        <button style="background:var(--bg4);border:1px solid var(--brd);border-radius:8px;padding:6px 11px;font-size:11px;color:var(--txt2);cursor:pointer" onclick="editFormula(${ri})">✏ Edit</button>
+        <button style="background:var(--bg4);border:1px solid var(--brd);border-radius:8px;padding:6px 11px;font-size:11px;color:var(--acc);cursor:pointer" onclick="quickPractice(${ri})">⚡ Practice</button>
+        <button style="background:transparent;border:1px solid #FF6B6B33;border-radius:8px;padding:6px 11px;font-size:11px;color:var(--red);cursor:pointer;margin-left:auto" onclick="deleteFormula(${ri})">🗑</button>
+      </div>
+    </div>`}).join('')+'<div style="height:80px"></div>';
+}
+function openAddFormula(){
+  editFIdx=-1;e('modal-f-title').textContent='Add Formula';e('mf-save-btn').textContent='Save';
+  e('mf-expr').value='';e('mf-desc').value='';e('mf-vars').value='';
+  buildSymRow();e('mf-lesson').innerHTML=curSubj.lessons.map(l=>`<option>${l}</option>`).join('');
+  openModal('M_formula');
+}
+function editFormula(idx){
+  editFIdx=idx;const f=curSubj.formulas[idx];
+  e('modal-f-title').textContent='Edit Formula';e('mf-save-btn').textContent='Update';
+  e('mf-expr').value=f.expr;e('mf-desc').value=f.desc;
+  e('mf-vars').value=(f.vars||[]).map(v=>v.n+'='+v.v+(v.unit?v.unit:'')).join(', ');
+  buildSymRow();e('mf-lesson').innerHTML=curSubj.lessons.map(l=>`<option${l===f.lesson?' selected':''}>${l}</option>`).join('');
+  openModal('M_formula');
+}
+function saveFormula(){
+  const expr=e('mf-expr').value.trim();if(!expr)return;
+  const desc=e('mf-desc').value.trim()||'No description';
+  const lesson=e('mf-lesson').value;
+  const vars=parseVars(e('mf-vars').value);
+  if(editFIdx>=0)Object.assign(curSubj.formulas[editFIdx],{expr,desc,lesson,vars});
+  else curSubj.formulas.push({id:'f'+Date.now(),expr,desc,lesson,attempts:0,correct:0,ease:2.5,interval:1,vars});
+  saveDB();closeModal('M_formula');renderFormulaList();renderSDStats();renderHome();
+  showToast(editFIdx>=0?'Formula updated!':'Formula saved!');
+}
+function parseVars(str){
+  return str.split(',').map(s=>s.trim()).filter(Boolean).map(s=>{
+    const m=s.match(/^([a-zA-Z_]+)\s*=\s*([\d.]+)\s*([a-zA-Z/²³°]*)/);
+    return m?{n:m[1],v:parseFloat(m[2]),unit:m[3]||''}:null;
+  }).filter(Boolean);
+}
+function deleteFormula(idx){
+  if(!confirm('Delete this formula?'))return;
+  curSubj.formulas.splice(idx,1);
+  saveDB();renderFormulaList();renderSDStats();renderHome();
+}
+function buildSymRow(){
+  const syms=['²','³','√','π','∫','Δ','∞','±','≈','°','α','β','λ','θ','μ','→','×','÷'];
+  e('sym-row').innerHTML=syms.map(s=>`<button class="symb" onclick="insSym('${s}')">${s}</button>`).join('');
+}
+function insSym(s){const i=e('mf-expr');const p=i.selectionStart;i.value=i.value.slice(0,p)+s+i.value.slice(p);i.setSelectionRange(p+1,p+1);i.focus()}
+
+// ═══════════════════════════════════════
+// LESSONS
+// ═══════════════════════════════════════
+function openManageLessons(){renderLessonModal();openModal('M_lessons')}
+function renderLessonModal(){
+  e('lesson-modal-list').innerHTML=curSubj.lessons.map((l,i)=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--brd)">
+      <span style="flex:1;font-size:13px">${l}</span>
+      <span style="font-size:11px;color:var(--txt3)">${curSubj.formulas.filter(f=>f.lesson===l).length} formulas</span>
+      <button style="background:transparent;border:none;color:var(--red);font-size:16px;cursor:pointer;padding:0 4px" onclick="deleteLesson(${i})">✕</button>
+    </div>`).join('');
+}
+function addLesson(){
+  const v=e('new-lesson-inp').value.trim();
+  if(!v||curSubj.lessons.includes(v))return;
+  curSubj.lessons.push(v);e('new-lesson-inp').value='';
+  saveDB();renderLessonModal();renderLessonChips();showToast('Lesson added!');
+}
+function deleteLesson(i){
+  const name=curSubj.lessons[i];
+  const hasFormulas=curSubj.formulas.some(f=>f.lesson===name);
+  if(hasFormulas){if(!confirm(`Formulas in "${name}" will move to General. Continue?`))return;
+    if(!curSubj.lessons.includes('General'))curSubj.lessons.push('General');
+    curSubj.formulas.forEach(f=>{if(f.lesson===name)f.lesson='General'});}
+  curSubj.lessons.splice(i,1);
+  if(!curSubj.lessons.length)curSubj.lessons.push('General');
+  saveDB();renderLessonModal();renderLessonChips();renderFormulaList();
+}
+
+// ═══════════════════════════════════════
+// ADAPTIVE QUIZ ENGINE
+// ═══════════════════════════════════════
+let qList=[],qIdx=0,qScore=0,qWrong=[],qStart,qIsExam=false,examInt=null,examSecs=0,examTotal=0;
+
+function buildQueue(isExam){
+  const all=[];
+  const scope=curSubj?[curSubj]:DB.subjects;
+  scope.forEach(s=>s.formulas.forEach(f=>{
+    if(!f.expr)return;
+    const a=f.attempts?f.correct/f.attempts:0.5;
+    const w=f.attempts<2?3:a<0.4?5:a<0.6?4:a<0.8?2:1;
+    for(let i=0;i<w;i++)all.push({f,s});
+  }));
+  all.sort(()=>Math.random()-.5);
+  const seen=new Set(),res=[];
+  for(const item of all){
+    if(!seen.has(item.f.id)){seen.add(item.f.id);res.push(item);
+      if(res.length>=(isExam?parseInt(e('exam-dur').value||15):parseInt(e('quiz-count')?.value||6)))break;}
+  }
+  return res;
+}
+
+function startAdaptiveQuiz(){
+  qIsExam=false;qList=buildQueue(false);qIdx=0;qScore=0;qWrong=[];qStart=Date.now();
+  goTo('S_quiz','n2');renderQuizQ();
+}
+function startExam(){
+  qIsExam=true;qList=buildQueue(true);qIdx=0;qScore=0;qWrong=[];qStart=Date.now();
+  examTotal=parseInt(e('exam-dur').value||15)*60;examSecs=examTotal;
+  clearInterval(examInt);
+  examInt=setInterval(()=>{
+    examSecs--;
+    const m=Math.floor(examSecs/60),s=examSecs%60;
+    e('exam-clock').textContent=m+':'+(s<10?'0':'')+s;
+    e('exam-tbar').style.width=Math.round(examSecs/examTotal*100)+'%';
+    if(examSecs<=60)e('exam-clock').style.color='#FF3333';
+    if(examSecs<=0){clearInterval(examInt);showResult();}
+  },1000);
+  goTo('S_exam',null);renderExamQ();
+}
+function confirmExitExam(){if(confirm('Exit exam? Progress will be lost.')){clearInterval(examInt);goTo('S_home','n0')}}
+
+function renderQuizQ(){
+  if(qIdx>=qList.length){showResult();return}
+  const{f,s}=qList[qIdx];
+  const a=f.attempts?f.correct/f.attempts:0.5;
+  const diff=f.attempts<2?2:a<0.4?5:a<0.6?4:a<0.8?3:2;
+  e('q-counter').textContent=`Q ${qIdx+1} / ${qList.length}`;
+  e('q-score').textContent=`Score: ${Math.floor(qScore)}`;
+  e('q-prog').style.width=Math.round(((qIdx+1)/qList.length)*100)+'%';
+  e('q-stars').textContent='★'.repeat(diff)+'☆'.repeat(5-diff);
+  const wb=e('q-weak-badge');
+  const wa=f.attempts?fAcc(f):null;
+  if(wa!==null&&wa<70){wb.textContent=`⚠ Weak: ${wa}%`;wb.style.cssText='background:#FF6B6B22;color:var(--red);border:1px solid #FF6B6B44;padding:2px 7px;border-radius:5px;font-size:10px'}
+  else{wb.textContent='';wb.style.cssText=''}
+  buildQ(f,s,e('quiz-body'),false);
+}
+function renderExamQ(){
+  if(qIdx>=qList.length){clearInterval(examInt);showResult();return}
+  const{f,s}=qList[qIdx];
+  e('exam-q-ctr').textContent=`Question ${qIdx+1} / ${qList.length}`;
+  buildQ(f,s,e('exam-body'),true);
+}
+
+function buildQ(f,s,body,isExam){
+  const allF=DB.subjects.flatMap(x=>x.formulas);
+  const others=allF.filter(x=>x.id!==f.id);
+  const a=f.attempts?f.correct/f.attempts:0.5;
+  let type=f.vars&&f.vars.length&&Math.random()<0.35?'apply':a<0.6&&Math.random()<0.4?'fill':'mc';
+  let html=`<div class="tag" style="background:${s.color}22;color:${s.color};margin-bottom:14px">${T('q_types')[type]}</div>`;
+  if(type==='mc'){
+    const wrong=others.sort(()=>Math.random()-.5).slice(0,3).map(x=>x.expr);
+    const opts=[f.expr,...wrong].sort(()=>Math.random()-.5);
+    const ci=opts.indexOf(f.expr);
+    html+=`<div style="font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600;line-height:1.45;margin-bottom:20px">What is the formula for:<br><span style="color:${s.color}">"${f.desc}"</span>?</div>`;
+    html+=opts.map((o,i)=>`<div class="opt" id="opt${i}" onclick="answerMC(${i},${ci},${isExam?1:0})"><div class="om">${'ABCD'[i]}</div><span style="font-family:'Space Grotesk',sans-serif;font-size:12px">${o}</span></div>`).join('');
+    html+=`<div id="qfb" style="display:none"></div><button id="qnxt" class="btn btn-a" style="display:none;margin-top:8px" onclick="${isExam?'nextExamQ()':'nextQuizQ()'}">Next →</button>`;
+  } else if(type==='fill'){
+    const words=f.expr.split(/\s+/);const bi=Math.floor(Math.random()*words.length);
+    const blanked=words.map((w,i)=>i===bi?`<span style="color:var(--acc);font-weight:700">____</span>`:w).join(' ');
+    html+=`<div style="font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:600;margin-bottom:8px">${f.desc}</div>`;
+    html+=`<div style="font-family:'Space Grotesk',sans-serif;font-size:17px;text-align:center;padding:14px;background:var(--bg3);border-radius:10px;margin-bottom:18px;line-height:1.6">${blanked}</div>`;
+    const ans=words[bi].replace(/'/g,"\\'");
+    html+=`<div class="lbl">Fill in the blank:</div><input class="inp" id="fill-inp" placeholder="Your answer..." style="margin-bottom:12px" onkeydown="if(event.key==='Enter')checkFill('${ans}',${isExam?1:0})">`;
+    html+=`<div id="qfb" style="display:none"></div>`;
+    html+=`<button class="btn btn-a" id="check-btn" onclick="checkFill('${ans}',${isExam?1:0})">Check Answer</button>`;
+    html+=`<button id="qnxt" class="btn btn-a" style="display:none;margin-top:8px" onclick="${isExam?'nextExamQ()':'nextQuizQ()'}">Next →</button>`;
+  } else {
+    const vals={};
+    f.vars.forEach(v=>{vals[v.n]={val:Math.round(v.v*(0.4+Math.random()*1.6)*100)/100,unit:v.unit}});
+    const given=Object.entries(vals).map(([k,{val,unit}])=>`${k} = <b>${val}</b>${unit?' '+unit:''}`).join(', ');
+    const unknown=f.expr.split('=')[0].trim().replace(/[^a-zA-ZΔ]/g,'').charAt(0)||'?';
+    html+=`<div style="font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:600;line-height:1.6;margin-bottom:10px">${T('prob_given')} <span style="color:var(--ylw)">${given}</span></div>`;
+    html+=`<div style="font-size:13px;color:var(--txt2);margin-bottom:14px">${T('prob_find')} <span style="color:var(--acc);font-weight:700">${unknown}</span></div>`;
+    html+=`<div style="font-family:'Space Grotesk',sans-serif;font-size:15px;color:var(--acc);text-align:center;padding:13px;background:var(--bg3);border-radius:10px;margin-bottom:16px">${f.expr}</div>`;
+    if(!isExam){
+      html+=`<div class="lbl">Your answer:</div><input class="inp" type="text" id="fill-inp" placeholder="e.g. 98" style="margin-bottom:12px">`;
+      html+=`<div id="qfb" style="display:none"></div>`;
+      html+=`<button class="btn btn-a" id="check-btn" onclick="checkApply()">Check Answer</button>`;
+      html+=`<button id="qnxt" class="btn btn-a" style="display:none;margin-top:8px" onclick="nextQuizQ()">Next →</button>`;
+    } else {
+      html+=`<button class="btn btn-a" style="margin-top:10px" onclick="nextExamQ()">Next →</button>`;
+    }
+  }
+  body.innerHTML=html;
+}
+
+function answerMC(sel,correct,isExam){
+  document.querySelectorAll('.opt').forEach(o=>{o.classList.add('locked');o.onclick=null});
+  const f=qList[qIdx].f;const right=sel===correct;
+  f.attempts++;if(right){f.correct++;qScore++;}else qWrong.push(f);
+  updateSRS(f,right);saveDB();
+  if(!isExam){
+    e('opt'+correct).classList.add('correct');e('opt'+correct).querySelector('.om').textContent='✓';
+    if(!right){e('opt'+sel).classList.add('wrong');e('opt'+sel).querySelector('.om').textContent='✗'}
+    showFB(right,right?T('correct'):T('wrong_pre')+f.expr);
+    e('qnxt').style.display='block';
+  } else nextExamQ();
+}
+function checkFill(answer,isExam){
+  const inp=e('fill-inp');const val=inp.value.trim().toLowerCase();
+  const norm=s=>s.toLowerCase().replace(/[^a-z0-9]/gi,'');
+  const right=val===answer.toLowerCase()||norm(val)===norm(answer);
+  const f=qList[qIdx].f;f.attempts++;if(right){f.correct++;qScore++;}else qWrong.push(f);
+  updateSRS(f,right);saveDB();
+  inp.disabled=true;inp.style.borderColor=right?'var(--grn)':'var(--red)';
+  if(e('check-btn'))e('check-btn').style.display='none';
+  if(!isExam){showFB(right,right?T('correct'):T('wrong_pre')+answer);e('qnxt').style.display='block';}
+  else nextExamQ();
+}
+function checkApply(){
+  const f=qList[qIdx].f;f.attempts++;f.correct+=0.5;qScore+=0.5;
+  updateSRS(f,true);saveDB();
+  if(e('check-btn'))e('check-btn').style.display='none';
+  showFB(true,'Good attempt! Keep applying the formula.');
+  if(e('qnxt'))e('qnxt').style.display='block';
+}
+function showFB(ok,msg){
+  const fb=e('qfb');fb.style.display='block';fb.className='fb '+(ok?'ok':'bad');fb.textContent=msg;
+}
+function nextQuizQ(){qIdx++;renderQuizQ()}
+function nextExamQ(){qIdx++;renderExamQ()}
+
+function updateSRS(f,correct){
+  const q=correct?5:2;
+  f.ease=Math.max(1.3,f.ease+(0.1-(5-q)*(0.08+(5-q)*0.02)));
+  f.interval=correct?Math.max(1,Math.round(f.interval*f.ease)):1;
+}
+
+function showResult(){
+  clearInterval(examInt);
+  const elapsed=Math.round((Date.now()-qStart)/1000);
+  const m=Math.floor(elapsed/60),s=elapsed%60;
+  const sc=Math.floor(qScore);const pct=qList.length?Math.round(sc/qList.length*100):0;
+  e('res-score').textContent=sc+'/'+qList.length;
+  const g=pct>=90?'A':pct>=70?'B':pct>=50?'C':'D';
+  const gc=pct>=90?'var(--grn)':pct>=70?'var(--teal)':pct>=50?'var(--ylw)':'var(--red)';
+  e('res-grade').textContent=T('grade')[g];e('res-grade').style.color=gc;
+  e('res-msg').textContent=`${sc} / ${qList.length} correct (${pct}%)`;
+  e('res-breakdown').innerHTML=`
+    <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--brd);font-size:13px"><span style="color:var(--txt2)">${T('bd').correct}</span><span style="color:var(--grn);font-weight:700">${sc}</span></div>
+    <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--brd);font-size:13px"><span style="color:var(--txt2)">${T('bd').wrong}</span><span style="color:var(--red);font-weight:700">${qList.length-sc}</span></div>
+    <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--brd);font-size:13px"><span style="color:var(--txt2)">${T('bd').acc}</span><span style="font-weight:700">${pct}%</span></div>
+    <div style="display:flex;justify-content:space-between;padding:7px 0;font-size:13px"><span style="color:var(--txt2)">${T('bd').time}</span><span style="font-weight:700">${m}m ${s}s</span></div>`;
+  const unique=[...new Set(qWrong.map(f=>f.id))].map(id=>qWrong.find(f=>f.id===id));
+  e('res-weak').innerHTML=unique.length?unique.slice(0,4).map(f=>`<div style="font-size:12px;padding:6px 0;border-bottom:1px solid var(--brd)"><span>${f.expr}</span> <span style="color:var(--txt2);font-size:10px">${f.desc}</span></div>`).join(''):
+    `<div style="font-size:12px;color:var(--grn)">${T('no_weak')}</div>`;
+  drawArc(pct,gc);
+  goTo('S_result',null);renderHome();
+}
+function drawArc(pct,color){
+  const c=e('arc-canvas');if(!c)return;
+  const ctx=c.getContext('2d');ctx.clearRect(0,0,130,130);
+  ctx.beginPath();ctx.arc(65,65,54,0,Math.PI*2);ctx.strokeStyle='#252A3A';ctx.lineWidth=9;ctx.stroke();
+  const angle=(pct/100)*Math.PI*2-Math.PI/2;
+  ctx.beginPath();ctx.arc(65,65,54,-Math.PI/2,angle);
+  ctx.strokeStyle=color;ctx.lineWidth=9;ctx.lineCap='round';ctx.stroke();
+}
+
+// ═══════════════════════════════════════
+// PROBLEM GENERATOR
+// ═══════════════════════════════════════
+function initProbGen(){
+  e('pg-subj').innerHTML=DB.subjects.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+  if(curSubj)e('pg-subj').value=curSubj.id;
+  pgUpdateFormulas();
+}
+function pgUpdateFormulas(){
+  const s=DB.subjects.find(x=>x.id===e('pg-subj').value);
+  e('pg-formula').innerHTML=(s?s.formulas:[]).map((f,i)=>`<option value="${i}">${f.expr.slice(0,50)}</option>`).join('');
+  pgPreview();
+}
+function pgPreview(){
+  const s=DB.subjects.find(x=>x.id===e('pg-subj').value);
+  const f=s?.formulas[parseInt(e('pg-formula').value)||0];
+  e('pg-display').textContent=f?f.expr:'—';
+}
+function quickPractice(idx){
+  goTo('S_probgen','n2');
+  e('pg-subj').value=curSubj.id;pgUpdateFormulas();
+  e('pg-formula').value=idx;pgPreview();
+}
+function generateProblems(){
+  const s=DB.subjects.find(x=>x.id===e('pg-subj').value);
+  const f=s?.formulas[parseInt(e('pg-formula').value)||0];
+  if(!f){e('pg-output').innerHTML='<div style="color:var(--red);font-size:12px">Please select a formula.</div>';return}
+  const n=parseInt(e('pg-count').value||3);
+  const diff=e('pg-diff').value;
+  let html='';
+  for(let i=0;i<n;i++){
+    const vars=f.vars&&f.vars.length?f.vars:guessVars(f.expr);
+    const vals={};
+    vars.forEach(v=>{
+      const base=v.v||5;
+      const mult=diff==='easy'?1+Math.random()*0.5:diff==='hard'?2+Math.random()*8:0.5+Math.random()*3;
+      vals[v.n]={val:Math.round(base*mult*100)/100,unit:v.unit||''};
+    });
+    const given=Object.entries(vals).map(([k,{val,unit}])=>`<b>${k} = ${val}</b>${unit?' '+unit:''}`).join(', ');
+    const lhs=f.expr.split('=')[0].trim();
+    html+=`<div style="background:var(--bg3);border:1px solid var(--brd);border-left:3px solid ${s.color};border-radius:12px;padding:14px;margin-bottom:10px">
+      <div style="font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px">Problem ${i+1} · ${diff}</div>
+      <div style="font-size:13px;line-height:1.8;margin-bottom:8px">${T('prob_given')} ${given}<br>${T('prob_find')} <span style="color:var(--acc);font-weight:700">${lhs}</span></div>
+      <div style="font-size:11px;color:var(--txt2);border-top:1px solid var(--brd);padding-top:8px">${T('prob_use')} <em style="color:var(--teal)">${f.expr}</em></div>
+    </div>`;
+  }
+  e('pg-output').innerHTML=html+'<div style="height:20px"></div>';
+}
+function guessVars(expr){
+  const m=expr.match(/\b([A-Za-z])\b/g)||[];
+  return[...new Set(m)].slice(1,4).map(n=>({n,v:Math.ceil(Math.random()*10),unit:''}));
+}
+
+// ═══════════════════════════════════════
+// HANDWRITING
+// ═══════════════════════════════════════
+let hwCtx=null,hwDrawing=false,hwPaths=[],hwCurPath=[],hwColor='#6C63FF';
+function initHwCanvas(){
+  const c=e('hw-canvas');if(!c)return;
+  if(!hwCtx){
+    hwCtx=c.getContext('2d');
+    hwCtx.strokeStyle=hwColor;hwCtx.lineWidth=3;hwCtx.lineCap='round';hwCtx.lineJoin='round';
+    c.addEventListener('pointerdown',ev=>{
+      ev.preventDefault();hwDrawing=true;
+      const r=c.getBoundingClientRect();
+      const x=(ev.clientX-r.left)*(c.width/r.width),y=(ev.clientY-r.top)*(c.height/r.height);
+      hwCurPath=[[x,y]];hwCtx.beginPath();hwCtx.moveTo(x,y);c.setPointerCapture(ev.pointerId);
+    });
+    c.addEventListener('pointermove',ev=>{
+      if(!hwDrawing)return;ev.preventDefault();
+      const r=c.getBoundingClientRect();
+      const x=(ev.clientX-r.left)*(c.width/r.width),y=(ev.clientY-r.top)*(c.height/r.height);
+      hwCtx.lineTo(x,y);hwCtx.stroke();hwCtx.beginPath();hwCtx.moveTo(x,y);hwCurPath.push([x,y]);
+    });
+    c.addEventListener('pointerup',()=>{hwDrawing=false;if(hwCurPath.length>1)hwPaths.push([...hwCurPath])});
+  }
+  const syms=['x','²','√','π','∫','Δ','α','β','θ','=','+','-','·','÷','F','m','a','v','t','d'];
+  e('hw-sym-row').innerHTML=syms.map(s=>`<button class="symb" onclick="hwIns('${s}')">${s}</button>`).join('');
+}
+function hwIns(s){const i=e('hw-expr');const p=i.selectionStart;i.value=i.value.slice(0,p)+s+i.value.slice(p);i.setSelectionRange(p+1,p+1);i.focus()}
+function hwSetColor(c,btn){
+  hwColor=c;if(hwCtx)hwCtx.strokeStyle=c;
+  document.querySelectorAll('#S_hw [onclick^="hwSetColor"]').forEach(d=>d.style.borderColor='transparent');
+  if(btn)btn.style.borderColor='#fff';
+}
+function hwClear(){if(hwCtx)hwCtx.clearRect(0,0,e('hw-canvas').width,e('hw-canvas').height);hwPaths=[]}
+function hwUndo(){
+  if(!hwPaths.length)return;hwPaths.pop();
+  const c=e('hw-canvas');hwCtx.clearRect(0,0,c.width,c.height);
+  hwCtx.strokeStyle=hwColor;hwCtx.lineWidth=parseInt(e('hw-size').value||3);
+  hwCtx.lineCap='round';hwCtx.lineJoin='round';
+  hwPaths.forEach(path=>{if(path.length<2)return;hwCtx.beginPath();hwCtx.moveTo(path[0][0],path[0][1]);
+    path.slice(1).forEach(([x,y])=>{hwCtx.lineTo(x,y);hwCtx.stroke();hwCtx.beginPath();hwCtx.moveTo(x,y)})});
+}
+function initHwSubjSel(){e('hw-subj').innerHTML=DB.subjects.map(s=>`<option value="${s.id}">${s.name}</option>`).join('')}
+function hwSave(){
+  const expr=e('hw-expr').value.trim();if(!expr){showToast('Please type the formula text.');return}
+  const desc=e('hw-desc').value.trim()||'Handwritten formula';
+  const s=DB.subjects.find(x=>x.id===e('hw-subj').value)||DB.subjects[0];
+  s.formulas.push({id:'f'+Date.now(),expr,desc,lesson:s.lessons[0]||'General',attempts:0,correct:0,ease:2.5,interval:1,vars:[]});
+  saveDB();e('hw-expr').value='';e('hw-desc').value='';hwClear();renderHome();
+  showToast(`Saved to ${s.name}!`);
+}
+
+// ═══════════════════════════════════════
+// FLASHCARDS
+// ═══════════════════════════════════════
+let flashList=[],flashIdx=0,flashFlipped=false;
+function openFlashcards(){
+  flashList=curSubj?[...curSubj.formulas]:[...DB.subjects.flatMap(s=>s.formulas)];
+  flashList.sort(()=>Math.random()-.5);flashIdx=0;flashFlipped=false;
+  e('srs-new').textContent=flashList.filter(f=>!f.attempts).length;
+  e('srs-learn').textContent=flashList.filter(f=>f.attempts>0&&fAcc(f)<80).length;
+  e('srs-rev').textContent=flashList.filter(f=>f.attempts>=2&&fAcc(f)>=60&&fAcc(f)<80).length;
+  e('srs-mast').textContent=flashList.filter(isMastered).length;
+  loadFlash();goTo('S_flash','n1');
+}
+function loadFlash(){
+  if(!flashList.length)return;
+  const f=flashList[flashIdx%flashList.length];
+  e('fc-side').textContent='Question — tap to flip';
+  e('fc-main').textContent=f.desc;e('fc-sub').textContent='';
+  e('flashcard').style.background='var(--bg3)';
+  e('flash-ctr').textContent=`${(flashIdx%flashList.length)+1} / ${flashList.length}`;
+  flashFlipped=false;
+}
+function flipCard(){
+  const f=flashList[flashIdx%flashList.length];flashFlipped=!flashFlipped;
+  if(flashFlipped){e('fc-side').textContent='Answer';e('fc-main').textContent=f.expr;e('fc-sub').textContent=f.lesson;e('flashcard').style.background='var(--bg4)'}
+  else loadFlash();
+}
+function rateFlash(r){
+  const f=flashList[flashIdx%flashList.length];
+  if(r==='easy'){f.attempts+=1;f.correct+=1;updateSRS(f,true)}
+  else if(r==='good'){f.attempts+=1;f.correct+=0.7;updateSRS(f,true)}
+  else{f.attempts+=1;updateSRS(f,false)}
+  saveDB();flashIdx++;loadFlash();
+}
+
+// ═══════════════════════════════════════
+// PROGRESS
+// ═══════════════════════════════════════
+function renderProgress(){
+  const tF=DB.subjects.reduce((a,s)=>a+s.formulas.length,0);
+  const tM=DB.subjects.reduce((a,s)=>a+s.formulas.filter(isMastered).length,0);
+  const tA=DB.subjects.flatMap(s=>s.formulas).reduce((a,f)=>a+f.attempts,0);
+  const tC=DB.subjects.flatMap(s=>s.formulas).reduce((a,f)=>a+f.correct,0);
+  const oa=tA?Math.round(tC/tA*100):0;
+  let html=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+    <div class="sbox"><div class="sv" style="color:var(--acc)">${tF}</div><div class="sl">${T('formulas')}</div></div>
+    <div class="sbox"><div class="sv" style="color:var(--grn)">${tM}</div><div class="sl">Mastered</div></div>
+    <div class="sbox"><div class="sv" style="color:var(--ylw)">${oa}%</div><div class="sl">${T('accuracy')}</div></div>
+    <div class="sbox"><div class="sv" style="color:var(--teal)">${tA}</div><div class="sl">Attempts</div></div>
+  </div>`;
+  DB.subjects.forEach(s=>{
+    const sa2=sAcc(s);const sm=s.formulas.filter(isMastered).length;const sw=s.formulas.filter(isWeak).length;
+    html+=`<div style="background:var(--bg3);border:1px solid var(--brd);border-left:3px solid ${s.color};border-radius:12px;padding:14px;margin-bottom:10px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <span style="font-size:22px">${s.icon}</span>
+        <div style="flex:1"><div style="font-size:14px;font-weight:600">${s.name}</div><div style="font-size:11px;color:var(--txt2);margin-top:2px">${s.formulas.length} formulas</div></div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;color:${s.color}">${sa2}%</div>
+      </div>
+      <div class="prog" style="margin-bottom:10px"><div class="pf" style="width:${sa2}%;background:${s.color}"></div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center">
+        <div><div style="font-size:15px;font-weight:700;color:var(--grn)">${sm}</div><div style="font-size:9px;color:var(--txt3)">Mastered</div></div>
+        <div><div style="font-size:15px;font-weight:700;color:var(--red)">${sw}</div><div style="font-size:9px;color:var(--txt3)">Weak</div></div>
+        <div><div style="font-size:15px;font-weight:700;color:var(--acc)">${s.formulas.length-sm-sw}</div><div style="font-size:9px;color:var(--txt3)">Learning</div></div>
+      </div>
+    </div>`;
+  });
+  e('progress-body').innerHTML=html+'<div style="height:20px"></div>';
+}
+
+// ═══════════════════════════════════════
+// EXPORT / IMPORT
+// ═══════════════════════════════════════
+function exportData(){
+  const json=JSON.stringify({version:'3.0',subjects:DB.subjects,exported:new Date().toISOString()},null,2);
+  const blob=new Blob([json],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='studyforge_backup.json';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  URL.revokeObjectURL(url);showToast('Data exported!');
+}
+function triggerImport(){e('import-file').click()}
+function importData(ev){
+  const file=ev.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev2=>{
+    try{
+      const data=JSON.parse(ev2.target.result);
+      if(!data.subjects)throw new Error('Invalid format');
+      DB=data;saveDB();renderHome();renderSubjectsList();
+      showToast('Data imported successfully!');
+    }catch(err){showToast('Import failed: invalid file')}
+  };
+  reader.readAsText(file);
+}
+
+// ═══════════════════════════════════════
+// SERVICE WORKER REGISTRATION
+// ═══════════════════════════════════════
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('/sw.js').catch(()=>{});
+  });
+}
+
+// ═══════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════
+window.addEventListener('DOMContentLoaded',()=>{
+  loadDB();
+  const savedLang=localStorage.getItem('studyforge_lang')||'en';
+  setLang(savedLang);
+  renderHome();
+  // prevent context menu on long press (Android WebView)
+  document.addEventListener('contextmenu',e=>e.preventDefault());
+  // prevent text selection during swipe
+  document.addEventListener('selectstart',e=>{if(e.target.tagName!=='INPUT'&&e.target.tagName!=='TEXTAREA')e.preventDefault()});
+});
+</script>
+</body>
+</html>
